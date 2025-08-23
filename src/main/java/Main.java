@@ -24,21 +24,24 @@ public class Main {
       return false;
     }
     
+    // Single character literal match
     if (pattern.length() == 1) {
       return inputLine.contains(pattern);
     }
     
+    // Digit character class
     if ("\\d".equals(pattern)) {
       return inputLine.chars().anyMatch(Character::isDigit);
     }
 
+    // Word character class (alphanumeric + underscore)
     if ("\\w".equals(pattern)) {
       return inputLine.chars().anyMatch(c -> Character.isLetterOrDigit(c) || c == '_');
     }
 
+    // Character group [...]
     if (pattern.startsWith("[") && pattern.endsWith("]")) {
-      var matchingGroup = pattern.substring(1, pattern.length() - 1);
-
+      String matchingGroup = pattern.substring(1, pattern.length() - 1);
       return inputLine.chars().anyMatch(c -> matchingGroup.indexOf(c) != -1);
     }
     
