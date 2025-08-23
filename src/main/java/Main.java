@@ -45,6 +45,14 @@ public class Main {
 
       if (matchingGroup.isEmpty()) return false;
 
+      // Check If negatif group
+      if (matchingGroup.charAt(0) == '^'){
+        var negGroup = matchingGroup.substring(1, matchingGroup.length() -1);
+
+        
+        return !inputLine.chars().allMatch(c-> negGroup.indexOf(c) != -1);
+      }
+
       return inputLine.chars().anyMatch(c -> matchingGroup.indexOf(c) != -1);
     }
     
