@@ -20,10 +20,18 @@ public class Main {
   }
 
   public static boolean matchPattern(String inputLine, String pattern) {
+    if (pattern == null || inputLine == null) {
+      return false;
+    }
+    
     if (pattern.length() == 1) {
       return inputLine.contains(pattern);
-    } else {
-      throw new RuntimeException("Unhandled pattern: " + pattern);
     }
+    
+    if ("\\d".equals(pattern)) {
+      return inputLine.chars().anyMatch(Character::isDigit);
+    }
+    
+    throw new RuntimeException("Unhandled pattern: " + pattern);
   }
 }
