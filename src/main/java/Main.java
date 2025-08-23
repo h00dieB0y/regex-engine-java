@@ -31,6 +31,10 @@ public class Main {
     if ("\\d".equals(pattern)) {
       return inputLine.chars().anyMatch(Character::isDigit);
     }
+
+    if ("\\w".equals(pattern)) {
+      return inputLine.chars().anyMatch(c -> Character.isLetterOrDigit(c) || c == '_');
+    }
     
     throw new RuntimeException("Unhandled pattern: " + pattern);
   }
