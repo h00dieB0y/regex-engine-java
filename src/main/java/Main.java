@@ -61,7 +61,7 @@ public class Main {
       }
 
       var allowedChars = matchingGroup.chars().boxed().collect(Collectors.toSet());
-      
+
       return inputLine.chars().anyMatch(allowedChars::contains);
     }
 
