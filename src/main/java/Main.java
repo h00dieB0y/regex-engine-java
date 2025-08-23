@@ -1,6 +1,5 @@
 import java.io.IOException;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -43,25 +42,25 @@ public class Main {
 
     // Character group [...]
     if (pattern.startsWith("[") && pattern.endsWith("]")) {
-      var matchingGroup = pattern.substring(1, pattern.length() - 1);
-      
+      String matchingGroup = pattern.substring(1, pattern.length() - 1);
       if (matchingGroup.isEmpty()) {
         return false;
       }
 
+      // Negated group
       if (matchingGroup.charAt(0) == '^') {
-        var negativeGroup = matchingGroup.substring(1);
+        String negativeGroup = matchingGroup.substring(1);
         
         if (negativeGroup.isEmpty()) {
-          return true;
+          return !inputLine.isEmpty(); // [^] matches any non-empty string
         }
         
-        Set<Integer> excludedChars = negativeGroup.chars().boxed().collect(Collectors.toSet());
+        var excludedChars = negativeGroup.chars().boxed().collect(Collectors.toSet());
 
-        return inputLine.chars().noneMatch(excludedChars::contains);
+        return inputLine.chars().anyMatch(c -> !excludedChars.contains(c));
       }
 
-      final Set<Integer> allowedChars = matchingGroup.chars().boxed().collect(Collectors.toSet());
+      var allowedChars = matchingGroup.chars().boxed().collect(Collectors.toSet());
       
       return inputLine.chars().anyMatch(allowedChars::contains);
     }
