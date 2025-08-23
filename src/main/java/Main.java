@@ -47,9 +47,8 @@ public class Main {
 
       // Check If negatif group
       if (matchingGroup.charAt(0) == '^'){
-        var negGroup = matchingGroup.substring(1, matchingGroup.length() -1);
+        var negGroup = matchingGroup.substring(1);
 
-        
         return inputLine.chars().anyMatch(c-> negGroup.indexOf(c) == -1);
       }
 
