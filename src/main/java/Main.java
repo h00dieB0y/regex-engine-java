@@ -42,6 +42,9 @@ public class Main {
     // Character group [...]
     if (pattern.startsWith("[") && pattern.endsWith("]")) {
       String matchingGroup = pattern.substring(1, pattern.length() - 1);
+
+      if (matchingGroup.isEmpty()) return false;
+
       return inputLine.chars().anyMatch(c -> matchingGroup.indexOf(c) != -1);
     }
     
