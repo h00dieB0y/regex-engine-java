@@ -39,7 +39,8 @@ public class Main {
     DIGIT_CLASS, // \d - matches any digit
     WORD_CLASS, // \w - matches word characters (letters, digits, underscore)
     CHARACTER_GROUP, // [abc] or [^abc] - matches character sets
-    LITERAL_CHARACTER // a, b, c... - matches exact characters
+    LITERAL_CHARACTER, // a, b, c... - matches exact characters
+    ONE_OR_MORE // + quantifier
   }
 
   // ==================== MAIN MATCHING LOGIC ====================
@@ -89,6 +90,14 @@ public class Main {
     if (inputStart >= inputLine.length())
       return false;
 
+    if (pattern.length() > 1 && pattern.charAt(1) == '+') {
+      var element = pattern.charAt(0);
+
+      var remainingPattern = pattern.substring(2);
+
+      return matchOneOrMore(element, remainingPattern, inputLine, inputStart);
+    }
+
     if (matchesPatternElement(inputLine.charAt(inputStart), pattern, 0)) {
       var remainingPattern = getRemainingPattern(pattern);
 
@@ -101,6 +110,10 @@ public class Main {
   private static String getRemainingPattern(String pattern) {
     if (pattern.isEmpty()) {
       return "";
+    }
+
+    if (pattern.length() > 1 && pattern.charAt(1) == '+') {
+      return pattern.substring(2); // Skip "element+"
     }
 
     int nextElementPosition = advanceToNextPatternElement(pattern, 0);
@@ -128,6 +141,7 @@ public class Main {
       case DIGIT_CLASS -> Character.isDigit(character);
       case WORD_CLASS -> Character.isLetterOrDigit(character) || character == '_';
       case CHARACTER_GROUP -> matchesCharacterGroup(character, extractCharacterGroup(pattern, patternPosition));
+      case ONE_OR_MORE -> matchOneOrMore(character, pattern, pattern, patternPosition);
       case LITERAL_CHARACTER -> character == pattern.charAt(patternPosition);
     };
   }
@@ -145,6 +159,9 @@ public class Main {
     if (position < 0 || position >= patternLength) {
       return Optional.empty();
     }
+
+    if (pattern.charAt(position) == '+')
+      return Optional.of(PatternElementType.ONE_OR_MORE);
 
     if (pattern.charAt(position) == '\\') {
       int nextPosition = position + 1;
@@ -187,7 +204,7 @@ public class Main {
     }
 
     return switch (type.get()) {
-      case DIGIT_CLASS, WORD_CLASS -> currentPosition + 2; // Skip '\' and 'd'/'w'
+      case DIGIT_CLASS, WORD_CLASS, ONE_OR_MORE -> currentPosition + 2; // Skip '\' and 'd'/'w'
       case CHARACTER_GROUP -> pattern.indexOf(']', currentPosition + 1) + 1; // Skip to after ']'
       case LITERAL_CHARACTER -> currentPosition + 1;
     };
@@ -242,5 +259,20 @@ public class Main {
         .collect(Collectors.toSet());
 
     return allowedChars.contains((int) c);
+  }
+
+  private static boolean matchOneOrMore(char c, String remainingPattern, String text, int textPos) {
+    if (textPos >= text.length() || text.charAt(textPos) != c)
+      return false;
+
+    do {
+      textPos++;
+
+      if (matchesPatternAtPosition(text, remainingPattern, textPos))
+        return true;
+
+    } while (textPos < text.length() && text.charAt(textPos) == c);
+
+    return false;
   }
 }
