@@ -80,20 +80,31 @@ public class Main {
    * @return true if the pattern matches at this position
    */
   private static boolean matchesPatternAtPosition(String inputLine, String pattern, int inputStart) {
-    int currentInputIndex = inputStart;
-    int currentPatternIndex = 0;
+    if (pattern.isEmpty())
+      return true;
 
-    while (currentPatternIndex < pattern.length() && currentInputIndex < inputLine.length()) {
-      if (!matchesPatternElement(inputLine.charAt(currentInputIndex), pattern, currentPatternIndex)) {
-        return false;
-      }
+    if (pattern.equals("$"))
+      return inputStart == inputLine.length();
 
-      currentInputIndex++;
-      currentPatternIndex = advanceToNextPatternElement(pattern, currentPatternIndex);
+    if (inputStart >= inputLine.length())
+      return false;
+
+    if (matchesPatternElement(inputLine.charAt(inputStart), pattern, 0)) {
+      var remainingPattern = getRemainingPattern(pattern);
+
+      return matchesPatternAtPosition(inputLine, remainingPattern, inputStart + 1);
     }
 
-    // Check if we've consumed the entire pattern
-    return currentPatternIndex >= pattern.length();
+    return false;
+  }
+
+  private static String getRemainingPattern(String pattern) {
+    if (pattern.isEmpty()) {
+      return "";
+    }
+
+    int nextElementPosition = advanceToNextPatternElement(pattern, 0);
+    return pattern.substring(nextElementPosition);
   }
 
   // ==================== PATTERN ELEMENT MATCHING ====================
