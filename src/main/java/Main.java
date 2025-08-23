@@ -50,7 +50,7 @@ public class Main {
         var negGroup = matchingGroup.substring(1, matchingGroup.length() -1);
 
         
-        return !inputLine.chars().allMatch(c-> negGroup.indexOf(c) != -1);
+        return inputLine.chars().anyMatch(c-> negGroup.indexOf(c) == -1);
       }
 
       return inputLine.chars().anyMatch(c -> matchingGroup.indexOf(c) != -1);
