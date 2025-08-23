@@ -35,6 +35,12 @@ public class Main {
     if ("\\w".equals(pattern)) {
       return inputLine.chars().anyMatch(c -> Character.isLetterOrDigit(c) || c == '_');
     }
+
+    if (pattern.startsWith("[") && pattern.endsWith("]")) {
+      var matchingGroup = pattern.substring(1, pattern.length() - 1);
+
+      return matchingGroup.chars().anyMatch(c-> inputLine.contains(String.valueOf(c)));
+    }
     
     throw new RuntimeException("Unhandled pattern: " + pattern);
   }
