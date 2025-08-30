@@ -42,7 +42,88 @@ PatternMatcher → Interface for all pattern matching operations
 Pattern Classes → Individual implementations for each regex feature
 ```
 
+### Core Components
+
+| Component | Purpose |
+|-----------|---------|
+| `PatternFactory` | Parses regex strings and creates pattern objects |
+| `PatternMatcher` | Interface defining matching operations |
+| `SequencePattern` | Handles sequential pattern matching |
+| `AlternationPattern` | Implements OR logic (`\|`) |
+| `QuantifierPattern` | Base for `+`, `?` quantifiers |
+| `AnchorPattern` | Implements `^` and `$` anchors |
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Java 21 or higher
+- Maven 3.6+
+
+### Building the Project
+
+```bash
+# Clone from GitHub
+git clone https://github.com/your-username/codecrafters-grep-java.git
+cd codecrafters-grep-java
+
+# Or clone from CodeCrafters
+git clone https://git.codecrafters.io/your-username/grep-challenge.git
+cd grep-challenge
+
+# Compile and package
+mvn package
+
+# Run the grep implementation
+./your_program.sh -E "<pattern>"
+```
+
+### Usage Examples
+
+```bash
+# Match literal characters
+echo "hello" | ./your_program.sh -E "hello"
+
+# Use wildcards
+echo "cat" | ./your_program.sh -E "c.t"
+
+# Character classes
+echo "123" | ./your_program.sh -E "\d+"
+
+# Anchors
+echo "start" | ./your_program.sh -E "^start"
+
+# Alternation
+echo "cat" | ./your_program.sh -E "(cat|dog)"
+```
+
+## 🛠️ Development
+
+### Project Structure
+```
+src/main/java/
+├── Main.java                    # Entry point
+├── PatternFactory.java         # Pattern creation and parsing
+├── PatternMatcher.java         # Core matching interface
+├── SequencePattern.java        # Sequential pattern matching
+├── AlternationPattern.java     # OR logic implementation
+├── *Pattern.java              # Individual pattern implementations
+└── MatchResult.java           # Result utilities
+```
+
+### Key Design Patterns
+- **Factory Pattern** - `PatternFactory` for object creation
+- **Strategy Pattern** - Different matching strategies via `PatternMatcher`
+- **Composite Pattern** - Complex patterns built from simpler ones
+
+## 🧪 Testing
+
+The implementation includes comprehensive error handling and supports all standard regex features expected in a grep-like tool.
+
+## � Technical Deep Dive
+
 ### Regex Processing Flow
+
+For developers interested in understanding the internal workings of the regex engine, here's the detailed processing flow:
 
 ```mermaid
 flowchart TD
@@ -124,84 +205,7 @@ flowchart TD
     class EE errorStyle
 ```
 
-### Core Components
-
-| Component | Purpose |
-|-----------|---------|
-| `PatternFactory` | Parses regex strings and creates pattern objects |
-| `PatternMatcher` | Interface defining matching operations |
-| `SequencePattern` | Handles sequential pattern matching |
-| `AlternationPattern` | Implements OR logic (`\|`) |
-| `QuantifierPattern` | Base for `+`, `?` quantifiers |
-| `AnchorPattern` | Implements `^` and `$` anchors |
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Java 21 or higher
-- Maven 3.6+
-
-### Building the Project
-
-```bash
-# Clone from GitHub
-git clone https://github.com/your-username/codecrafters-grep-java.git
-cd codecrafters-grep-java
-
-# Or clone from CodeCrafters
-git clone https://git.codecrafters.io/your-username/grep-challenge.git
-cd grep-challenge
-
-# Compile and package
-mvn package
-
-# Run the grep implementation
-./your_program.sh -E "<pattern>"
-```
-
-### Usage Examples
-
-```bash
-# Match literal characters
-echo "hello" | ./your_program.sh -E "hello"
-
-# Use wildcards
-echo "cat" | ./your_program.sh -E "c.t"
-
-# Character classes
-echo "123" | ./your_program.sh -E "\d+"
-
-# Anchors
-echo "start" | ./your_program.sh -E "^start"
-
-# Alternation
-echo "cat" | ./your_program.sh -E "(cat|dog)"
-```
-
-## 🛠️ Development
-
-### Project Structure
-```
-src/main/java/
-├── Main.java                    # Entry point
-├── PatternFactory.java         # Pattern creation and parsing
-├── PatternMatcher.java         # Core matching interface
-├── SequencePattern.java        # Sequential pattern matching
-├── AlternationPattern.java     # OR logic implementation
-├── *Pattern.java              # Individual pattern implementations
-└── MatchResult.java           # Result utilities
-```
-
-### Key Design Patterns
-- **Factory Pattern** - `PatternFactory` for object creation
-- **Strategy Pattern** - Different matching strategies via `PatternMatcher`
-- **Composite Pattern** - Complex patterns built from simpler ones
-
-## 🧪 Testing
-
-The implementation includes comprehensive error handling and supports all standard regex features expected in a grep-like tool.
-
-## 📚 Learning Outcomes
+## �📚 Learning Outcomes
 
 This project demonstrates:
 - **Regex Engine Internals** - How regular expressions are parsed and executed
