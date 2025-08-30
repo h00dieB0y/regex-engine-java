@@ -8,6 +8,10 @@ public abstract class QuantifierPattern implements PatternMatcher {
         this.element = element;
     }
     
+    public PatternMatcher getElement() {
+        return element;
+    }
+    
     @Override
     public boolean matches(String input) {
         for (int i = 0; i <= input.length(); i++) {

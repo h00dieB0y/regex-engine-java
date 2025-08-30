@@ -51,6 +51,25 @@ public class SequencePattern implements PatternMatcher {
                 }
             }
             return -1;
+        } else if (currentPattern instanceof ZeroOrOnePattern) {
+            // For optional patterns, try both matching and not matching
+            ZeroOrOnePattern optPattern = (ZeroOrOnePattern) currentPattern;
+            
+            // First try matching the optional pattern
+            int optLength = optPattern.getElement().matchLength(input, position);
+            if (optLength > 0) {
+                int remainingLength = matchLengthWithBacktracking(input, position + optLength, patternIndex + 1);
+                if (remainingLength >= 0) {
+                    return optLength + remainingLength;
+                }
+            }
+            
+            // Then try not matching (zero length)
+            int remainingLength = matchLengthWithBacktracking(input, position, patternIndex + 1);
+            if (remainingLength >= 0) {
+                return remainingLength;
+            }
+            return -1;
         } else {
             // Regular pattern matching
             int length = currentPattern.matchLength(input, position);

@@ -15,21 +15,9 @@ public class OneOrMorePattern extends QuantifierPattern {
             return -1; // Must match at least once
         }
         
-        // Collect all possible match positions
-        int currentPos = position;
-        int matchCount = 0;
-        
-        while (currentPos < input.length()) {
-            int elementLength = element.matchLength(input, currentPos);
-            if (elementLength <= 0) {
-                break;
-            }
-            currentPos += elementLength;
-            matchCount++;
-        }
-        
-        // Return the total length if we matched at least once
-        return matchCount > 0 ? (currentPos - position) : -1;
+        // For backtracking support, return just the first match length
+        // The SequencePattern will handle trying longer matches via getAllPossibleLengths
+        return firstMatch;
     }
     
     /**
@@ -39,18 +27,18 @@ public class OneOrMorePattern extends QuantifierPattern {
         java.util.List<Integer> lengths = new java.util.ArrayList<>();
         
         int currentPos = position;
-        int matchCount = 0;
         
+        // Try to match the element repeatedly and collect all possible stopping points
         while (currentPos < input.length()) {
             int elementLength = element.matchLength(input, currentPos);
             if (elementLength <= 0) {
                 break;
             }
             currentPos += elementLength;
-            matchCount++;
             lengths.add(currentPos - position);
         }
         
-        return matchCount > 0 ? lengths.stream().mapToInt(i -> i).toArray() : new int[0];
+        // Convert to array, ensuring we have at least one match (since this is OneOrMore)
+        return lengths.isEmpty() ? new int[0] : lengths.stream().mapToInt(i -> i).toArray();
     }
 }
