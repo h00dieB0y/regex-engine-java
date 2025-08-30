@@ -670,10 +670,11 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
       String groupContent = pattern.substring(patternPos + 1, closeParenPos);
       
       if (groupContent.contains("|")) {
-        String[] alternatives = extractOrGroup(pattern, patternPos);
+        String[] alternatives = groupContent.split("\\|");
         for (String alt : alternatives) {
-          int altMatchLength = findPatternMatchLengthRecursive(inputLine, alt, inputPos, 0);
-          if (altMatchLength > inputPos) {
+          // Verify that the alternative actually matches at this position
+          if (matchesPatternAtPosition(inputLine, alt, inputPos)) {
+            int altMatchLength = findPatternMatchLengthRecursive(inputLine, alt, inputPos, 0);
             return findPatternMatchLengthRecursive(inputLine, pattern, altMatchLength, closeParenPos + 1);
           }
         }
