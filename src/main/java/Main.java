@@ -39,6 +39,7 @@ public class Main {
     DIGIT_CLASS, // \d - matches any digit
     WORD_CLASS, // \w - matches word characters (letters, digits, underscore)
     CHARACTER_GROUP, // [abc] or [^abc] - matches character sets
+    OR_GROUP,
     LITERAL_CHARACTER, // a, b, c... - matches exact characters
     ONE_OR_MORE, // + quantifier
     ZERO_OR_ONE, // ? quantifier
@@ -155,6 +156,11 @@ public class Main {
       case DIGIT_CLASS -> Character.isDigit(character);
       case WORD_CLASS -> Character.isLetterOrDigit(character) || character == '_';
       case CHARACTER_GROUP -> matchesCharacterGroup(character, extractCharacterGroup(pattern, patternPosition));
+      case OR_GROUP -> {
+        var groups = extractOrGroup(pattern, patternPosition);
+
+        yield matchesCharacterGroup(character, groups[0]) || matchesCharacterGroup(character, groups[1]);
+      }
       case ONE_OR_MORE -> matchOneOrMore(character, pattern, pattern, patternPosition);
       case ZERO_OR_ONE -> false; // This case should not be handled here, it's handled in matchesPatternAtPosition
       case ANY_CHARACTER -> true; // Any character match
@@ -200,6 +206,16 @@ public class Main {
       return Optional.of(PatternElementType.CHARACTER_GROUP);
     }
 
+    if (pattern.charAt(position) == '(') {
+      int indexSeparator = pattern.indexOf('|', position + 1);
+
+      if (indexSeparator == -1) return Optional.of(PatternElementType.LITERAL_CHARACTER);
+
+      if (pattern.indexOf(')', indexSeparator + 1) == -1) return Optional.of(PatternElementType.LITERAL_CHARACTER);
+
+      return Optional.of(PatternElementType.OR_GROUP);
+    }
+
     if (pattern.charAt(position) == '.') {
       return Optional.of(PatternElementType.ANY_CHARACTER);
     }
@@ -227,6 +243,7 @@ public class Main {
       case DIGIT_CLASS, WORD_CLASS -> currentPosition + 2; // Skip '\' and 'd'/'w'
       case ONE_OR_MORE, ZERO_OR_ONE -> currentPosition + 2; // Skip element and quantifier
       case CHARACTER_GROUP -> pattern.indexOf(']', currentPosition + 1) + 1; // Skip to after ']'
+      case OR_GROUP -> pattern.indexOf(')', currentPosition + 1);
       case ANY_CHARACTER, LITERAL_CHARACTER -> currentPosition + 1; // Single character
     };
   }
@@ -244,6 +261,13 @@ public class Main {
   private static String extractCharacterGroup(String pattern, int position) {
     int endOfGroup = pattern.indexOf(']', position + 1);
     return pattern.substring(position + 1, endOfGroup); // Skip the '[' bracket
+  }
+
+  private static String[] extractOrGroup(String pattern, int position) {
+    int indexSeparator = pattern.indexOf('|', position + 1);
+    int endOfGroup = pattern.indexOf(')', indexSeparator +1);
+
+    return new String[] {pattern.substring(position + 1, indexSeparator), pattern.substring(indexSeparator + 1, endOfGroup)};
   }
 
   /**
