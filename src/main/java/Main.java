@@ -157,7 +157,7 @@ public class Main {
       case CHARACTER_GROUP -> matchesCharacterGroup(character, extractCharacterGroup(pattern, patternPosition));
       case ONE_OR_MORE -> matchOneOrMore(character, pattern, pattern, patternPosition);
       case ZERO_OR_ONE -> false; // This case should not be handled here, it's handled in matchesPatternAtPosition
-      case ANY_CHARACTER -> true;
+      case ANY_CHARACTER -> true; // Any character match
       case LITERAL_CHARACTER -> character == pattern.charAt(patternPosition);
     };
   }
