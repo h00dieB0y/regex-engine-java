@@ -66,6 +66,18 @@ public class Main {
       return matchesPatternAtPosition(inputLine, remainingPattern, 0);
     }
 
+    if (pattern.endsWith("$")) {
+      String patternWithoutEnd = pattern.substring(0, pattern.length() - 1);
+      
+      // Try matching from each position, but the match must reach the end of the input
+      for (int i = 0; i <= inputLine.length(); i++) {
+        if (matchesPatternAtPositionToEnd(inputLine, patternWithoutEnd, i)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     for (int i = 0; i <= inputLine.length(); i++) {
       if (matchesPatternAtPosition(inputLine, pattern, i)) {
         return true;
@@ -122,6 +134,51 @@ public class Main {
       var remainingPattern = getRemainingPattern(pattern);
 
       return matchesPatternAtPosition(inputLine, remainingPattern, inputStart + 1);
+    }
+
+    return false;
+  }
+
+  /**
+   * Checks if the pattern matches starting at a specific position and reaches the end of input.
+   * 
+   * @param inputLine  the input string
+   * @param pattern    the pattern to match
+   * @param inputStart the starting position in the input
+   * @return true if the pattern matches at this position and consumes input to the end
+   */
+  private static boolean matchesPatternAtPositionToEnd(String inputLine, String pattern, int inputStart) {
+    if (pattern.isEmpty())
+      return inputStart == inputLine.length();
+
+    if (inputStart >= inputLine.length())
+      return false;
+
+    // Handle groups with quantifiers: (pattern)+ or (pattern)?
+    if (pattern.charAt(0) == '(' && hasGroupQuantifier(pattern)) {
+      return matchGroupWithQuantifierToEnd(inputLine, pattern, inputStart);
+    }
+
+    // Handle OR groups (cat|dog)
+    if (pattern.charAt(0) == '(' && pattern.contains("|")) {
+      return matchOrGroupToEnd(inputLine, pattern, inputStart);
+    }
+
+    if (pattern.length() > 1 && pattern.charAt(1) == '+') {
+      var element = pattern.charAt(0);
+      var remainingPattern = pattern.substring(2);
+      return matchOneOrMoreToEnd(element, remainingPattern, inputLine, inputStart);
+    }
+
+    if (pattern.length() > 1 && pattern.charAt(1) == '?') {
+      var element = pattern.charAt(0);
+      var remainingPattern = pattern.substring(2);
+      return matchZeroOrOneToEnd(element, remainingPattern, inputLine, inputStart);
+    }
+
+    if (matchesPatternElement(inputLine.charAt(inputStart), pattern, 0)) {
+      var remainingPattern = getRemainingPattern(pattern);
+      return matchesPatternAtPositionToEnd(inputLine, remainingPattern, inputStart + 1);
     }
 
     return false;
@@ -449,6 +506,112 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
     return false;
   }
 
+  private static boolean matchGroupWithQuantifierToEnd(String inputLine, String pattern, int inputStart) {
+    int closeParenPos = findMatchingCloseParen(pattern, 0);
+    char quantifier = pattern.charAt(closeParenPos + 1);
+    String groupContent = pattern.substring(1, closeParenPos);
+    String remainingPattern = pattern.substring(closeParenPos + 2);
+
+    if (quantifier == '+') {
+      return matchGroupOneOrMoreToEnd(inputLine, groupContent, remainingPattern, inputStart);
+    } else if (quantifier == '?') {
+      return matchGroupZeroOrOneToEnd(inputLine, groupContent, remainingPattern, inputStart);
+    }
+
+    return false;
+  }
+
+  private static boolean matchGroupOneOrMoreToEnd(String inputLine, String groupContent, String remainingPattern, int inputStart) {
+    int currentPos = inputStart;
+    boolean hasMatchedAtLeastOnce = false;
+    
+    // Continue matching groups while possible
+    while (currentPos < inputLine.length() && matchesPatternAtPosition(inputLine, groupContent, currentPos)) {
+      int newPos = findPatternMatchLength(inputLine, groupContent, currentPos);
+      if (newPos <= currentPos) {
+        break; // Prevent infinite loop
+      }
+      
+      currentPos = newPos;
+      hasMatchedAtLeastOnce = true;
+      
+      // After each group match, try to match the remaining pattern to end
+      if (matchesPatternAtPositionToEnd(inputLine, remainingPattern, currentPos)) {
+        return true;
+      }
+    }
+    
+    return hasMatchedAtLeastOnce && matchesPatternAtPositionToEnd(inputLine, remainingPattern, currentPos);
+  }
+
+  private static boolean matchGroupZeroOrOneToEnd(String inputLine, String groupContent, String remainingPattern, int inputStart) {
+    // Try without matching the group (zero occurrences)
+    if (matchesPatternAtPositionToEnd(inputLine, remainingPattern, inputStart)) {
+      return true;
+    }
+    
+    // Try with matching the group once
+    if (matchesPatternAtPosition(inputLine, groupContent, inputStart)) {
+      int newPos = findPatternMatchLength(inputLine, groupContent, inputStart);
+      return matchesPatternAtPositionToEnd(inputLine, remainingPattern, newPos);
+    }
+    
+    return false;
+  }
+
+  private static boolean matchOrGroupToEnd(String inputLine, String pattern, int inputStart) {
+    String[] groups = extractOrGroup(pattern, 0);
+    String remainingPattern = getRemainingPattern(pattern);
+
+    // Try matching the first alternative
+    if (matchesPatternSequenceToEnd(inputLine, groups[0], inputStart, remainingPattern)) {
+      return true;
+    }
+
+    // Try matching the second alternative
+    return matchesPatternSequenceToEnd(inputLine, groups[1], inputStart, remainingPattern);
+  }
+
+  private static boolean matchesPatternSequenceToEnd(String inputLine, String subPattern, int inputStart, String remainingPattern) {
+    // Use the main matching logic for the subPattern
+    if (matchesPatternAtPosition(inputLine, subPattern, inputStart)) {
+      // Calculate how many characters were consumed
+      int currentPos = findMatchEndPosition(inputLine, subPattern, inputStart);
+      return matchesPatternAtPositionToEnd(inputLine, remainingPattern, currentPos);
+    }
+    
+    return false;
+  }
+
+  private static boolean matchOneOrMoreToEnd(char element, String remainingPattern, String text, int textPos) {
+    if (textPos >= text.length())
+      return false;
+
+    if (!matchesElement(text.charAt(textPos), element)) {
+      return false;
+    }
+
+    do {
+      textPos++;
+      if (matchesPatternAtPositionToEnd(text, remainingPattern, textPos))
+        return true;
+    } while (textPos < text.length() && matchesElement(text.charAt(textPos), element));
+
+    return false;
+  }
+
+  private static boolean matchZeroOrOneToEnd(char element, String remainingPattern, String inputLine, int inputStart) {
+    if (matchesPatternAtPositionToEnd(inputLine, remainingPattern, inputStart)) {
+      return true;
+    }
+
+    if (inputStart < inputLine.length() && matchesElement(inputLine.charAt(inputStart), element)) {
+      return matchesPatternAtPositionToEnd(inputLine, remainingPattern, inputStart + 1);
+    }
+
+    return false;
+  }
+
   private static int findPatternMatchLength(String inputLine, String pattern, int startPos) {
     return findPatternMatchLengthRecursive(inputLine, pattern, startPos, 0);
   }
@@ -460,6 +623,19 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
     
     if (inputPos >= inputLine.length()) {
       return inputPos;
+    }
+
+    // Handle escape sequences like \d, \w
+    if (patternPos < pattern.length() - 1 && pattern.charAt(patternPos) == '\\') {
+      char nextChar = pattern.charAt(patternPos + 1);
+      if (nextChar == 'd' && Character.isDigit(inputLine.charAt(inputPos))) {
+        return findPatternMatchLengthRecursive(inputLine, pattern, inputPos + 1, patternPos + 2);
+      } else if (nextChar == 'w' && (Character.isLetterOrDigit(inputLine.charAt(inputPos)) || inputLine.charAt(inputPos) == '_')) {
+        return findPatternMatchLengthRecursive(inputLine, pattern, inputPos + 1, patternPos + 2);
+      } else if (inputLine.charAt(inputPos) == nextChar) {
+        return findPatternMatchLengthRecursive(inputLine, pattern, inputPos + 1, patternPos + 2);
+      }
+      return inputPos; // No match
     }
 
     // Handle quantifiers
@@ -488,14 +664,12 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
     if (pattern.charAt(patternPos) == '(') {
       int closeParenPos = findMatchingCloseParen(pattern, patternPos);
       String groupContent = pattern.substring(patternPos + 1, closeParenPos);
-      String remainingPattern = pattern.substring(closeParenPos + 1);
       
       if (groupContent.contains("|")) {
         String[] alternatives = extractOrGroup(pattern, patternPos);
         for (String alt : alternatives) {
-          // Try to match this alternative completely within the group context
-          if (canMatchAlternativeInContext(inputLine, alt, remainingPattern, inputPos)) {
-            int altMatchLength = findPatternMatchLengthRecursive(inputLine, alt, inputPos, 0);
+          int altMatchLength = findPatternMatchLengthRecursive(inputLine, alt, inputPos, 0);
+          if (altMatchLength > inputPos) {
             return findPatternMatchLengthRecursive(inputLine, pattern, altMatchLength, closeParenPos + 1);
           }
         }
@@ -515,34 +689,4 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
     return inputPos;
   }
 
-  private static boolean canMatchAlternativeInContext(String inputLine, String alternative, String remainingPattern, int inputPos) {
-    // Try to match the alternative and see if what follows can match the remaining pattern
-    int altMatchLength = findPatternMatchLengthRecursive(inputLine, alternative, inputPos, 0);
-    
-    if (altMatchLength <= inputPos) {
-      return false; // Alternative didn't match anything
-    }
-    
-    // Check if the remaining pattern can start matching at the position after the alternative
-    if (remainingPattern.isEmpty()) {
-      return true; // No more pattern to match
-    }
-    
-    // For the specific case we're debugging: after matching "dog", we need to check if
-    // the next character(s) can be handled by the remaining pattern
-    return inputPos < inputLine.length() && canPatternMatchAtPosition(inputLine, remainingPattern, altMatchLength);
-  }
-  
-  private static boolean canPatternMatchAtPosition(String inputLine, String pattern, int position) {
-    if (pattern.isEmpty()) {
-      return true;
-    }
-    
-    if (position >= inputLine.length()) {
-      return false;
-    }
-    
-    // Simple check: does the pattern have a chance of matching at this position?
-    return matchesPatternAtPosition(inputLine.substring(position), pattern, 0);
-  }
 }
