@@ -136,7 +136,7 @@ public class PatternFactory {
     }
     
     private ElementParseResult parseAlternation(String content, int nextPosition) {
-        String[] alternatives = content.split("\\|");
+        List<String> alternatives = splitOnTopLevelPipe(content);
         List<PatternMatcher> patterns = new ArrayList<>();
         
         for (String alt : alternatives) {
@@ -144,6 +144,29 @@ public class PatternFactory {
         }
         
         return new ElementParseResult(new AlternationPattern(patterns), nextPosition);
+    }
+    
+    private List<String> splitOnTopLevelPipe(String content) {
+        List<String> parts = new ArrayList<>();
+        int start = 0;
+        int depth = 0;
+        
+        for (int i = 0; i < content.length(); i++) {
+            char c = content.charAt(i);
+            if (c == '(') {
+                depth++;
+            } else if (c == ')') {
+                depth--;
+            } else if (c == '|' && depth == 0) {
+                // Found top-level pipe
+                parts.add(content.substring(start, i));
+                start = i + 1;
+            }
+        }
+        
+        // Add the last part
+        parts.add(content.substring(start));
+        return parts;
     }
     
     private int findMatchingParen(String regex, int openPos) {
