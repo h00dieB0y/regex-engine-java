@@ -327,10 +327,12 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
   }
 
   private static String[] extractOrGroup(String pattern, int position) {
-    int indexSeparator = pattern.indexOf('|', position + 1);
-    int endOfGroup = pattern.indexOf(')', indexSeparator +1);
-
-    return new String[] {pattern.substring(position + 1, indexSeparator), pattern.substring(indexSeparator + 1, endOfGroup)};
+    int startOfGroup = position + 1;
+    int endOfGroup = findMatchingCloseParen(pattern, position);
+    String groupContent = pattern.substring(startOfGroup, endOfGroup);
+    
+    // Split by | to handle multiple alternatives
+    return groupContent.split("\\|");
   }
 
   /**
@@ -398,13 +400,14 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
     String[] groups = extractOrGroup(pattern, 0);
     String remainingPattern = getRemainingPattern(pattern);
 
-    // Try matching the first alternative
-    if (matchesPatternSequence(inputLine, groups[0], inputStart, remainingPattern)) {
-      return true;
+    // Try matching each alternative
+    for (String group : groups) {
+      if (matchesPatternSequence(inputLine, group, inputStart, remainingPattern)) {
+        return true;
+      }
     }
-
-    // Try matching the second alternative
-    return matchesPatternSequence(inputLine, groups[1], inputStart, remainingPattern);
+    
+    return false;
   }
 
   private static boolean matchesPatternSequence(String inputLine, String subPattern, int inputStart, String remainingPattern) {
@@ -563,13 +566,14 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
     String[] groups = extractOrGroup(pattern, 0);
     String remainingPattern = getRemainingPattern(pattern);
 
-    // Try matching the first alternative
-    if (matchesPatternSequenceToEnd(inputLine, groups[0], inputStart, remainingPattern)) {
-      return true;
+    // Try matching each alternative
+    for (String group : groups) {
+      if (matchesPatternSequenceToEnd(inputLine, group, inputStart, remainingPattern)) {
+        return true;
+      }
     }
-
-    // Try matching the second alternative
-    return matchesPatternSequenceToEnd(inputLine, groups[1], inputStart, remainingPattern);
+    
+    return false;
   }
 
   private static boolean matchesPatternSequenceToEnd(String inputLine, String subPattern, int inputStart, String remainingPattern) {
