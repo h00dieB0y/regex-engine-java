@@ -414,26 +414,29 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
 
   private static boolean matchGroupOneOrMore(String inputLine, String groupContent, String remainingPattern, int inputStart) {
     int currentPos = inputStart;
+    int matchCount = 0;
     
     // Must match at least once
-    if (!matchesPatternAtPosition(inputLine, groupContent, currentPos)) {
-      return false;
-    }
-    
-    // Find how many characters the first match consumed
-    currentPos = findPatternMatchLength(inputLine, groupContent, currentPos);
-    
-    // Keep matching as long as possible
-    while (currentPos < inputLine.length() && matchesPatternAtPosition(inputLine, groupContent, currentPos)) {
+    while (currentPos < inputLine.length()) {
+      if (!matchesPatternAtPosition(inputLine, groupContent, currentPos)) {
+        break;
+      }
+      
       int newPos = findPatternMatchLength(inputLine, groupContent, currentPos);
-      if (matchesPatternAtPosition(inputLine, remainingPattern, newPos)) {
+      if (newPos <= currentPos) {
+        break; // Prevent infinite loop
+      }
+      
+      currentPos = newPos;
+      matchCount++;
+      
+      // Try matching remaining pattern at each successful group match
+      if (matchesPatternAtPosition(inputLine, remainingPattern, currentPos)) {
         return true;
       }
-      currentPos = newPos;
     }
     
-    // Try matching remaining pattern with current position
-    return matchesPatternAtPosition(inputLine, remainingPattern, currentPos);
+    return matchCount > 0;
   }
 
   private static boolean matchGroupZeroOrOne(String inputLine, String groupContent, String remainingPattern, int inputStart) {
@@ -452,20 +455,66 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
   }
 
   private static int findPatternMatchLength(String inputLine, String pattern, int startPos) {
-    // This is a simplified approach - in a real implementation, this would be more complex
-    // For now, we'll use a heuristic based on pattern length
-    if (pattern.length() == 1) {
-      return startPos + 1;
+    return findPatternMatchLengthRecursive(inputLine, pattern, startPos, 0);
+  }
+
+  private static int findPatternMatchLengthRecursive(String inputLine, String pattern, int inputPos, int patternPos) {
+    if (patternPos >= pattern.length()) {
+      return inputPos;
     }
     
-    // For more complex patterns, try to find the shortest match
-    for (int len = 1; len <= inputLine.length() - startPos; len++) {
-      String candidate = inputLine.substring(startPos, startPos + len);
-      if (matchesPatternAtPosition(candidate, pattern, 0)) {
-        return startPos + len;
+    if (inputPos >= inputLine.length()) {
+      return inputPos;
+    }
+
+    // Handle quantifiers
+    if (patternPos + 1 < pattern.length() && pattern.charAt(patternPos + 1) == '+') {
+      char element = pattern.charAt(patternPos);
+      if (matchesElement(inputLine.charAt(inputPos), element)) {
+        int newInputPos = inputPos + 1;
+        while (newInputPos < inputLine.length() && matchesElement(inputLine.charAt(newInputPos), element)) {
+          newInputPos++;
+        }
+        return findPatternMatchLengthRecursive(inputLine, pattern, newInputPos, patternPos + 2);
+      }
+      return inputPos;
+    }
+
+    if (patternPos + 1 < pattern.length() && pattern.charAt(patternPos + 1) == '?') {
+      char element = pattern.charAt(patternPos);
+      if (matchesElement(inputLine.charAt(inputPos), element)) {
+        return findPatternMatchLengthRecursive(inputLine, pattern, inputPos + 1, patternPos + 2);
+      } else {
+        return findPatternMatchLengthRecursive(inputLine, pattern, inputPos, patternPos + 2);
       }
     }
-    
-    return startPos;
+
+    // Handle groups
+    if (pattern.charAt(patternPos) == '(') {
+      int closeParenPos = findMatchingCloseParen(pattern, patternPos);
+      String groupContent = pattern.substring(patternPos + 1, closeParenPos);
+      
+      if (groupContent.contains("|")) {
+        String[] alternatives = extractOrGroup(pattern, patternPos);
+        for (String alt : alternatives) {
+          int matchLength = findPatternMatchLengthRecursive(inputLine, alt, inputPos, 0);
+          if (matchLength > inputPos) {
+            return findPatternMatchLengthRecursive(inputLine, pattern, matchLength, closeParenPos + 1);
+          }
+        }
+        return inputPos;
+      } else {
+        int matchLength = findPatternMatchLengthRecursive(inputLine, groupContent, inputPos, 0);
+        return findPatternMatchLengthRecursive(inputLine, pattern, matchLength, closeParenPos + 1);
+      }
+    }
+
+    // Handle single character match
+    if (matchesPatternElement(inputLine.charAt(inputPos), pattern, patternPos)) {
+      int nextPatternPos = advanceToNextPatternElement(pattern, patternPos);
+      return findPatternMatchLengthRecursive(inputLine, pattern, inputPos + 1, nextPatternPos);
+    }
+
+    return inputPos;
   }
 }
