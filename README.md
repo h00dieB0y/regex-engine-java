@@ -220,7 +220,7 @@ This project was built as part of the ["Build Your Own grep" Challenge](https://
 ## � Repository Information
 
 This repository is maintained in two locations:
-- **GitHub**: [github.com/your-username/codecrafters-grep-java](https://github.com/your-username/codecrafters-grep-java) - Public repository for portfolio and collaboration
+- **GitHub**: [https://github.com/h00dieB0y/regex-engine-java](https://github.com/h00dieB0y/regex-engine-java) - Public repository for portfolio and collaboration
 - **CodeCrafters**: Private repository maintaining challenge progress and submissions
 
 Both repositories are kept in sync to preserve the complete development history while providing public access to the implementation.
