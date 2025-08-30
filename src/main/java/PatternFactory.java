@@ -40,7 +40,6 @@ public class PatternFactory {
         int i = 0;
         
         while (i < regex.length()) {
-            PatternMatcher element = parseElement(regex, i);
             ElementParseResult result = parseElementWithQuantifier(regex, i);
             
             sequence.add(result.pattern);
@@ -61,17 +60,16 @@ public class PatternFactory {
         // Check for quantifiers
         if (nextPos < regex.length()) {
             char quantifier = regex.charAt(nextPos);
-            switch (quantifier) {
-                case '+':
-                    return new ElementParseResult(
-                        new OneOrMorePattern(baseResult.pattern),
-                        nextPos + 1
-                    );
-                case '?':
-                    return new ElementParseResult(
-                        new ZeroOrOnePattern(baseResult.pattern),
-                        nextPos + 1
-                    );
+            if (quantifier == '+') {
+                return new ElementParseResult(
+                    new OneOrMorePattern(baseResult.pattern),
+                    nextPos + 1
+                );
+            } else if (quantifier == '?') {
+                return new ElementParseResult(
+                    new ZeroOrOnePattern(baseResult.pattern),
+                    nextPos + 1
+                );
             }
         }
         
@@ -161,10 +159,6 @@ public class PatternFactory {
             }
         }
         return -1;
-    }
-    
-    private PatternMatcher parseElement(String regex, int position) {
-        return parseElementWithQuantifier(regex, position).pattern;
     }
     
     private static class ElementParseResult {
