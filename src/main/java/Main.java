@@ -243,7 +243,7 @@ public class Main {
       case DIGIT_CLASS, WORD_CLASS -> currentPosition + 2; // Skip '\' and 'd'/'w'
       case ONE_OR_MORE, ZERO_OR_ONE -> currentPosition + 2; // Skip element and quantifier
       case CHARACTER_GROUP -> pattern.indexOf(']', currentPosition + 1) + 1; // Skip to after ']'
-      case OR_GROUP -> pattern.indexOf(')', currentPosition + 1);
+      case OR_GROUP -> pattern.indexOf(')', currentPosition + 1) + 1; // Skip to after ')'
       case ANY_CHARACTER, LITERAL_CHARACTER -> currentPosition + 1; // Single character
     };
   }
