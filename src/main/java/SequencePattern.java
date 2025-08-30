@@ -27,16 +27,42 @@ public class SequencePattern implements PatternMatcher {
     
     @Override
     public int matchLength(String input, int position) {
-        int currentPos = position;
-        
-        for (PatternMatcher pattern : patterns) {
-            int length = pattern.matchLength(input, currentPos);
-            if (length < 0) {
-                return -1; // Pattern didn't match
-            }
-            currentPos += length;
+        return matchLengthWithBacktracking(input, position, 0);
+    }
+    
+    private int matchLengthWithBacktracking(String input, int position, int patternIndex) {
+        if (patternIndex >= patterns.size()) {
+            return 0; // Successfully matched all patterns
         }
         
-        return currentPos - position;
+        PatternMatcher currentPattern = patterns.get(patternIndex);
+        
+        // For OneOrMorePattern, try all possible lengths
+        if (currentPattern instanceof OneOrMorePattern) {
+            OneOrMorePattern quantPattern = (OneOrMorePattern) currentPattern;
+            int[] possibleLengths = quantPattern.getAllPossibleLengths(input, position);
+            
+            // Try from longest to shortest for greedy matching
+            for (int i = possibleLengths.length - 1; i >= 0; i--) {
+                int length = possibleLengths[i];
+                int remainingLength = matchLengthWithBacktracking(input, position + length, patternIndex + 1);
+                if (remainingLength >= 0) {
+                    return length + remainingLength;
+                }
+            }
+            return -1;
+        } else {
+            // Regular pattern matching
+            int length = currentPattern.matchLength(input, position);
+            if (length < 0) {
+                return -1;
+            }
+            
+            int remainingLength = matchLengthWithBacktracking(input, position + length, patternIndex + 1);
+            if (remainingLength >= 0) {
+                return length + remainingLength;
+            }
+            return -1;
+        }
     }
 }
