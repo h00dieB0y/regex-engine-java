@@ -408,29 +408,29 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
 
   private static boolean matchGroupOneOrMore(String inputLine, String groupContent, String remainingPattern, int inputStart) {
     int currentPos = inputStart;
-    int matchCount = 0;
+    boolean hasMatchedAtLeastOnce = false;
     
-    // Must match at least once
-    while (currentPos < inputLine.length()) {
-      if (!matchesPatternAtPosition(inputLine, groupContent, currentPos)) {
-        break;
-      }
-      
+    // Continue matching groups while possible
+    while (currentPos < inputLine.length() && matchesPatternAtPosition(inputLine, groupContent, currentPos)) {
       int newPos = findPatternMatchLength(inputLine, groupContent, currentPos);
       if (newPos <= currentPos) {
         break; // Prevent infinite loop
       }
       
       currentPos = newPos;
-      matchCount++;
+      hasMatchedAtLeastOnce = true;
       
-      // Try matching remaining pattern at each successful group match
+      // After each group match, try to match the remaining pattern
       if (matchesPatternAtPosition(inputLine, remainingPattern, currentPos)) {
         return true;
       }
     }
     
-    // Only return true if we had at least one match AND the remaining pattern was satisfied
+    // Final check: if we matched at least once and are at the end, try remaining pattern
+    if (hasMatchedAtLeastOnce && matchesPatternAtPosition(inputLine, remainingPattern, currentPos)) {
+      return true;
+    }
+    
     return false;
   }
 
