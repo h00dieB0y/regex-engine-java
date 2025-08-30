@@ -109,6 +109,11 @@ public class Main {
       return matchZeroOrOne(element, remainingPattern, inputLine, inputStart);
     }
 
+    // Handle OR groups (cat|dog)
+    if (pattern.charAt(0) == '(' && pattern.contains("|")) {
+      return matchOrGroup(inputLine, pattern, inputStart);
+    }
+
     if (matchesPatternElement(inputLine.charAt(inputStart), pattern, 0)) {
       var remainingPattern = getRemainingPattern(pattern);
 
@@ -156,11 +161,7 @@ public class Main {
       case DIGIT_CLASS -> Character.isDigit(character);
       case WORD_CLASS -> Character.isLetterOrDigit(character) || character == '_';
       case CHARACTER_GROUP -> matchesCharacterGroup(character, extractCharacterGroup(pattern, patternPosition));
-      case OR_GROUP -> {
-        var groups = extractOrGroup(pattern, patternPosition);
-
-        yield matchesCharacterGroup(character, groups[0]) || matchesCharacterGroup(character, groups[1]);
-      }
+      case OR_GROUP -> matchOrGroup(pattern, pattern, patternPosition);
       case ONE_OR_MORE -> matchOneOrMore(character, pattern, pattern, patternPosition);
       case ZERO_OR_ONE -> false; // This case should not be handled here, it's handled in matchesPatternAtPosition
       case ANY_CHARACTER -> true; // Any character match
@@ -345,5 +346,38 @@ public class Main {
     }
 
     return false;
+  }
+
+  private static boolean matchOrGroup(String inputLine, String pattern, int inputStart) {
+    String[] groups = extractOrGroup(pattern, 0);
+    String remainingPattern = getRemainingPattern(pattern);
+
+    // Try matching the first alternative
+    if (matchesPatternSequence(inputLine, groups[0], inputStart, remainingPattern)) {
+      return true;
+    }
+
+    // Try matching the second alternative
+    return matchesPatternSequence(inputLine, groups[1], inputStart, remainingPattern);
+  }
+
+  private static boolean matchesPatternSequence(String inputLine, String subPattern, int inputStart, String remainingPattern) {
+    int currentPos = inputStart;
+    
+    // Match each character in the subPattern
+    for (int i = 0; i < subPattern.length(); i++) {
+      if (currentPos >= inputLine.length()) {
+        return false;
+      }
+      
+      if (!matchesPatternElement(inputLine.charAt(currentPos), subPattern, i)) {
+        return false;
+      }
+      
+      currentPos++;
+    }
+    
+    // After matching the subPattern, continue with the remaining pattern
+    return matchesPatternAtPosition(inputLine, remainingPattern, currentPos);
   }
 }
