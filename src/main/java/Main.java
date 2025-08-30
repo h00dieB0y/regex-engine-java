@@ -364,13 +364,7 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
   }
 
   private static int findMatchEndPosition(String inputLine, String pattern, int startPos) {
-    // Simple implementation: try each position until pattern no longer matches
-    for (int pos = startPos; pos <= inputLine.length(); pos++) {
-      if (!matchesPatternAtPosition(inputLine.substring(0, pos), pattern, startPos)) {
-        return pos - 1;
-      }
-    }
-    return inputLine.length();
+    return findPatternMatchLength(inputLine, pattern, startPos);
   }
 
   private static boolean hasGroupQuantifier(String pattern) {
