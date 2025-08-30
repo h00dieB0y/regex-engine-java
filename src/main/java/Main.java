@@ -3,9 +3,8 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 
 /**
- * A simple regex pattern matcher that supports basic pattern matching features.
- * Supports: literal characters, digit class (\d), word class (\w), and
- * character groups ([abc], [^abc])
+ * A regex pattern matcher supporting character classes, quantifiers, anchors,
+ * character groups, alternation, and grouped expressions.
  */
 public class Main {
 
@@ -33,17 +32,17 @@ public class Main {
   // ==================== PATTERN ELEMENT TYPES ====================
 
   /**
-   * Represents the different types of pattern elements that can be matched.
+   * Pattern element types supported by the matcher.
    */
   enum PatternElementType {
-    DIGIT_CLASS, // \d - matches any digit
-    WORD_CLASS, // \w - matches word characters (letters, digits, underscore)
-    CHARACTER_GROUP, // [abc] or [^abc] - matches character sets
+    DIGIT_CLASS,
+    WORD_CLASS,
+    CHARACTER_GROUP,
     OR_GROUP,
-    LITERAL_CHARACTER, // a, b, c... - matches exact characters
-    ONE_OR_MORE, // + quantifier
-    ZERO_OR_ONE, // ? quantifier
-    ANY_CHARACTER, // . quantifier
+    LITERAL_CHARACTER,
+    ONE_OR_MORE,
+    ZERO_OR_ONE,
+    ANY_CHARACTER,
   }
 
   // ==================== MAIN MATCHING LOGIC ====================
@@ -107,6 +106,11 @@ public class Main {
       var remainingPattern = pattern.substring(2);
 
       return matchZeroOrOne(element, remainingPattern, inputLine, inputStart);
+    }
+
+    // Handle groups with quantifiers: (pattern)+ or (pattern)?
+    if (pattern.charAt(0) == '(' && hasGroupQuantifier(pattern)) {
+      return matchGroupWithQuantifier(inputLine, pattern, inputStart);
     }
 
     // Handle OR groups (cat|dog)
@@ -243,27 +247,26 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
     }
 
     return switch (type.get()) {
-      case DIGIT_CLASS, WORD_CLASS -> currentPosition + 2; // Skip '\' and 'd'/'w'
-      case ONE_OR_MORE, ZERO_OR_ONE -> currentPosition + 2; // Skip element and quantifier
-      case CHARACTER_GROUP -> pattern.indexOf(']', currentPosition + 1) + 1; // Skip to after ']'
-      case OR_GROUP -> pattern.indexOf(')', currentPosition + 1) + 1; // Skip to after ')'
-      case ANY_CHARACTER, LITERAL_CHARACTER -> currentPosition + 1; // Single character
+      case DIGIT_CLASS, WORD_CLASS -> currentPosition + 2;
+      case ONE_OR_MORE, ZERO_OR_ONE -> currentPosition + 2;
+      case CHARACTER_GROUP -> pattern.indexOf(']', currentPosition + 1) + 1;
+      case OR_GROUP -> pattern.indexOf(')', currentPosition + 1) + 1;
+      case ANY_CHARACTER, LITERAL_CHARACTER -> currentPosition + 1;
     };
   }
 
   // ==================== CHARACTER GROUP HANDLING ====================
 
   /**
-   * Extracts the character group content from a pattern (content between [ and
-   * ]).
+   * Extracts character group content between brackets.
    * 
    * @param pattern  the full pattern
-   * @param position the position of the '[' character
-   * @return the content of the character group (without brackets)
+   * @param position position of the '[' character
+   * @return character group content without brackets
    */
   private static String extractCharacterGroup(String pattern, int position) {
     int endOfGroup = pattern.indexOf(']', position + 1);
-    return pattern.substring(position + 1, endOfGroup); // Skip the '[' bracket
+    return pattern.substring(position + 1, endOfGroup);
   }
 
   private static String[] extractOrGroup(String pattern, int position) {
@@ -274,38 +277,27 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
   }
 
   /**
-   * Checks if a character matches a character group specification.
-   * Supports both positive [abc] and negative [^abc] character groups.
+   * Checks if character matches character group specification.
    * 
-   * @param c     the character to test
-   * @param group the character group content (without brackets)
-   * @return true if the character matches the group specification
+   * @param c     character to test
+   * @param group character group content
+   * @return true if character matches group specification
    */
   private static boolean matchesCharacterGroup(char c, String group) {
     if (group.isEmpty()) {
       return false;
     }
 
-    // Handle negated groups [^abc]
     if (group.charAt(0) == '^') {
       String negativeGroup = group.substring(1);
-
       if (negativeGroup.isEmpty()) {
         return false;
       }
-
-      var excludedChars = negativeGroup.chars()
-          .boxed()
-          .collect(Collectors.toSet());
-
+      var excludedChars = negativeGroup.chars().boxed().collect(Collectors.toSet());
       return !excludedChars.contains((int) c);
     }
 
-    // Handle positive groups [abc]
-    var allowedChars = group.chars()
-        .boxed()
-        .collect(Collectors.toSet());
-
+    var allowedChars = group.chars().boxed().collect(Collectors.toSet());
     return allowedChars.contains((int) c);
   }
 
@@ -313,17 +305,14 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
     if (textPos >= text.length())
       return false;
 
-    // Check if first character matches the element
     if (!matchesElement(text.charAt(textPos), element)) {
       return false;
     }
 
     do {
       textPos++;
-
       if (matchesPatternAtPosition(text, remainingPattern, textPos))
         return true;
-
     } while (textPos < text.length() && matchesElement(text.charAt(textPos), element));
 
     return false;
@@ -331,18 +320,16 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
 
   private static boolean matchesElement(char character, char element) {
     if (element == '.') {
-      return true; // Any character matches '.'
+      return true;
     }
     return character == element;
   }
 
   private static boolean matchZeroOrOne(char element, String remainingPattern, String inputLine, int inputStart) {
-    // Try matching without consuming the element (zero occurrences)
     if (matchesPatternAtPosition(inputLine, remainingPattern, inputStart)) {
       return true;
     }
 
-    // Try matching by consuming the element (one occurrence)
     if (inputStart < inputLine.length() && matchesElement(inputLine.charAt(inputStart), element)) {
       return matchesPatternAtPosition(inputLine, remainingPattern, inputStart + 1);
     }
@@ -366,20 +353,119 @@ static boolean matchesPatternElement(char character, String pattern, int pattern
   private static boolean matchesPatternSequence(String inputLine, String subPattern, int inputStart, String remainingPattern) {
     int currentPos = inputStart;
     
-    // Match each character in the subPattern
-    for (int i = 0; i < subPattern.length(); i++) {
-      if (currentPos >= inputLine.length()) {
-        return false;
-      }
-      
-      if (!matchesPatternElement(inputLine.charAt(currentPos), subPattern, i)) {
-        return false;
-      }
-      
-      currentPos++;
+    // Use the main matching logic for the subPattern
+    if (matchesPatternAtPosition(inputLine, subPattern, inputStart)) {
+      // Calculate how many characters were consumed
+      currentPos = findMatchEndPosition(inputLine, subPattern, inputStart);
+      return matchesPatternAtPosition(inputLine, remainingPattern, currentPos);
     }
     
-    // After matching the subPattern, continue with the remaining pattern
+    return false;
+  }
+
+  private static int findMatchEndPosition(String inputLine, String pattern, int startPos) {
+    // Simple implementation: try each position until pattern no longer matches
+    for (int pos = startPos; pos <= inputLine.length(); pos++) {
+      if (!matchesPatternAtPosition(inputLine.substring(0, pos), pattern, startPos)) {
+        return pos - 1;
+      }
+    }
+    return inputLine.length();
+  }
+
+  private static boolean hasGroupQuantifier(String pattern) {
+    int closeParenPos = findMatchingCloseParen(pattern, 0);
+    if (closeParenPos == -1 || closeParenPos + 1 >= pattern.length()) {
+      return false;
+    }
+    char nextChar = pattern.charAt(closeParenPos + 1);
+    return nextChar == '+' || nextChar == '?';
+  }
+
+  private static int findMatchingCloseParen(String pattern, int openPos) {
+    int depth = 0;
+    for (int i = openPos; i < pattern.length(); i++) {
+      if (pattern.charAt(i) == '(') {
+        depth++;
+      } else if (pattern.charAt(i) == ')') {
+        depth--;
+        if (depth == 0) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  }
+
+  private static boolean matchGroupWithQuantifier(String inputLine, String pattern, int inputStart) {
+    int closeParenPos = findMatchingCloseParen(pattern, 0);
+    char quantifier = pattern.charAt(closeParenPos + 1);
+    String groupContent = pattern.substring(1, closeParenPos);
+    String remainingPattern = pattern.substring(closeParenPos + 2);
+
+    if (quantifier == '+') {
+      return matchGroupOneOrMore(inputLine, groupContent, remainingPattern, inputStart);
+    } else if (quantifier == '?') {
+      return matchGroupZeroOrOne(inputLine, groupContent, remainingPattern, inputStart);
+    }
+
+    return false;
+  }
+
+  private static boolean matchGroupOneOrMore(String inputLine, String groupContent, String remainingPattern, int inputStart) {
+    int currentPos = inputStart;
+    
+    // Must match at least once
+    if (!matchesPatternAtPosition(inputLine, groupContent, currentPos)) {
+      return false;
+    }
+    
+    // Find how many characters the first match consumed
+    currentPos = findPatternMatchLength(inputLine, groupContent, currentPos);
+    
+    // Keep matching as long as possible
+    while (currentPos < inputLine.length() && matchesPatternAtPosition(inputLine, groupContent, currentPos)) {
+      int newPos = findPatternMatchLength(inputLine, groupContent, currentPos);
+      if (matchesPatternAtPosition(inputLine, remainingPattern, newPos)) {
+        return true;
+      }
+      currentPos = newPos;
+    }
+    
+    // Try matching remaining pattern with current position
     return matchesPatternAtPosition(inputLine, remainingPattern, currentPos);
+  }
+
+  private static boolean matchGroupZeroOrOne(String inputLine, String groupContent, String remainingPattern, int inputStart) {
+    // Try without matching the group (zero occurrences)
+    if (matchesPatternAtPosition(inputLine, remainingPattern, inputStart)) {
+      return true;
+    }
+    
+    // Try with matching the group once
+    if (matchesPatternAtPosition(inputLine, groupContent, inputStart)) {
+      int newPos = findPatternMatchLength(inputLine, groupContent, inputStart);
+      return matchesPatternAtPosition(inputLine, remainingPattern, newPos);
+    }
+    
+    return false;
+  }
+
+  private static int findPatternMatchLength(String inputLine, String pattern, int startPos) {
+    // This is a simplified approach - in a real implementation, this would be more complex
+    // For now, we'll use a heuristic based on pattern length
+    if (pattern.length() == 1) {
+      return startPos + 1;
+    }
+    
+    // For more complex patterns, try to find the shortest match
+    for (int len = 1; len <= inputLine.length() - startPos; len++) {
+      String candidate = inputLine.substring(startPos, startPos + len);
+      if (matchesPatternAtPosition(candidate, pattern, 0)) {
+        return startPos + len;
+      }
+    }
+    
+    return startPos;
   }
 }
