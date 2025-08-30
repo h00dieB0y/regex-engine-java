@@ -282,9 +282,14 @@ public class Main {
     return allowedChars.contains((int) c);
   }
 
-  private static boolean matchOneOrMore(char c, String remainingPattern, String text, int textPos) {
-    if (textPos >= text.length() || text.charAt(textPos) != c)
+  private static boolean matchOneOrMore(char element, String remainingPattern, String text, int textPos) {
+    if (textPos >= text.length())
       return false;
+
+    // Check if first character matches the element
+    if (!matchesElement(text.charAt(textPos), element)) {
+      return false;
+    }
 
     do {
       textPos++;
@@ -292,9 +297,16 @@ public class Main {
       if (matchesPatternAtPosition(text, remainingPattern, textPos))
         return true;
 
-    } while (textPos < text.length() && text.charAt(textPos) == c);
+    } while (textPos < text.length() && matchesElement(text.charAt(textPos), element));
 
     return false;
+  }
+
+  private static boolean matchesElement(char character, char element) {
+    if (element == '.') {
+      return true; // Any character matches '.'
+    }
+    return character == element;
   }
 
   private static boolean matchZeroOrOne(char element, String remainingPattern, String inputLine, int inputStart) {
@@ -304,7 +316,7 @@ public class Main {
     }
 
     // Try matching by consuming the element (one occurrence)
-    if (inputStart < inputLine.length() && inputLine.charAt(inputStart) == element) {
+    if (inputStart < inputLine.length() && matchesElement(inputLine.charAt(inputStart), element)) {
       return matchesPatternAtPosition(inputLine, remainingPattern, inputStart + 1);
     }
 
