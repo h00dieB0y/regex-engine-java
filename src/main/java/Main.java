@@ -41,7 +41,8 @@ public class Main {
     CHARACTER_GROUP, // [abc] or [^abc] - matches character sets
     LITERAL_CHARACTER, // a, b, c... - matches exact characters
     ONE_OR_MORE, // + quantifier
-    ZERO_OR_ONE // ? quantifier
+    ZERO_OR_ONE, // ? quantifier
+    ANY_CHARACTER, // . quantifier
   }
 
   // ==================== MAIN MATCHING LOGIC ====================
@@ -156,6 +157,7 @@ public class Main {
       case CHARACTER_GROUP -> matchesCharacterGroup(character, extractCharacterGroup(pattern, patternPosition));
       case ONE_OR_MORE -> matchOneOrMore(character, pattern, pattern, patternPosition);
       case ZERO_OR_ONE -> false; // This case should not be handled here, it's handled in matchesPatternAtPosition
+      case ANY_CHARACTER -> true;
       case LITERAL_CHARACTER -> character == pattern.charAt(patternPosition);
     };
   }
@@ -198,6 +200,10 @@ public class Main {
       return Optional.of(PatternElementType.CHARACTER_GROUP);
     }
 
+    if (pattern.charAt(position) == '.') {
+      return Optional.of(PatternElementType.ANY_CHARACTER);
+    }
+
     return Optional.of(PatternElementType.LITERAL_CHARACTER);
   }
 
@@ -218,9 +224,10 @@ public class Main {
     }
 
     return switch (type.get()) {
-      case DIGIT_CLASS, WORD_CLASS, ONE_OR_MORE, ZERO_OR_ONE -> currentPosition + 2; // Skip '\' and 'd'/'w' or skip element and quantifier
+      case DIGIT_CLASS, WORD_CLASS -> currentPosition + 2; // Skip '\' and 'd'/'w'
+      case ONE_OR_MORE, ZERO_OR_ONE -> currentPosition + 2; // Skip element and quantifier
       case CHARACTER_GROUP -> pattern.indexOf(']', currentPosition + 1) + 1; // Skip to after ']'
-      case LITERAL_CHARACTER -> currentPosition + 1;
+      case ANY_CHARACTER, LITERAL_CHARACTER -> currentPosition + 1; // Single character
     };
   }
 
