@@ -150,24 +150,26 @@ public class Main {
    * @param patternPosition the position in the pattern to check
    * @return true if the character matches the pattern element
    */
-  static boolean matchesPatternElement(char character, String pattern, int patternPosition) {
+static boolean matchesPatternElement(char character, String pattern, int patternPosition) {
     Optional<PatternElementType> type = recognizePatternElement(pattern, patternPosition);
 
     if (type.isEmpty()) {
-      return false;
+        return false;
     }
 
     return switch (type.get()) {
-      case DIGIT_CLASS -> Character.isDigit(character);
-      case WORD_CLASS -> Character.isLetterOrDigit(character) || character == '_';
-      case CHARACTER_GROUP -> matchesCharacterGroup(character, extractCharacterGroup(pattern, patternPosition));
-      case OR_GROUP -> matchOrGroup(pattern, pattern, patternPosition);
-      case ONE_OR_MORE -> matchOneOrMore(character, pattern, pattern, patternPosition);
-      case ZERO_OR_ONE -> false; // This case should not be handled here, it's handled in matchesPatternAtPosition
-      case ANY_CHARACTER -> true; // Any character match
-      case LITERAL_CHARACTER -> character == pattern.charAt(patternPosition);
+        case DIGIT_CLASS -> Character.isDigit(character);
+        case WORD_CLASS -> Character.isLetterOrDigit(character) || character == '_';
+        case CHARACTER_GROUP -> matchesCharacterGroup(character, extractCharacterGroup(pattern, patternPosition));
+        case ANY_CHARACTER -> true; // Any character matches '.'
+        case LITERAL_CHARACTER -> character == pattern.charAt(patternPosition);
+        
+        // These cases should NOT be handled in this method:
+        case OR_GROUP -> throw new IllegalArgumentException("OR_GROUP should be handled in matchesPatternAtPosition");
+        case ONE_OR_MORE -> throw new IllegalArgumentException("ONE_OR_MORE should be handled in matchesPatternAtPosition"); 
+        case ZERO_OR_ONE -> throw new IllegalArgumentException("ZERO_OR_ONE should be handled in matchesPatternAtPosition");
     };
-  }
+}
 
   /**
    * Determines the type of pattern element at a given position.
