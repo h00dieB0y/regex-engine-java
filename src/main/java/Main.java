@@ -40,7 +40,8 @@ public class Main {
     WORD_CLASS, // \w - matches word characters (letters, digits, underscore)
     CHARACTER_GROUP, // [abc] or [^abc] - matches character sets
     LITERAL_CHARACTER, // a, b, c... - matches exact characters
-    ONE_OR_MORE // + quantifier
+    ONE_OR_MORE, // + quantifier
+    ZERO_OR_ONE // ? quantifier
   }
 
   // ==================== MAIN MATCHING LOGIC ====================
@@ -98,6 +99,14 @@ public class Main {
       return matchOneOrMore(element, remainingPattern, inputLine, inputStart);
     }
 
+    if (pattern.length() > 1 && pattern.charAt(1) == '?') {
+      var element = pattern.charAt(0);
+
+      var remainingPattern = pattern.substring(2);
+
+      return matchZeroOrOne(element, remainingPattern, inputLine, inputStart);
+    }
+
     if (matchesPatternElement(inputLine.charAt(inputStart), pattern, 0)) {
       var remainingPattern = getRemainingPattern(pattern);
 
@@ -114,6 +123,10 @@ public class Main {
 
     if (pattern.length() > 1 && pattern.charAt(1) == '+') {
       return pattern.substring(2); // Skip "element+"
+    }
+
+    if (pattern.length() > 1 && pattern.charAt(1) == '?') {
+      return pattern.substring(2); // Skip "element?"
     }
 
     int nextElementPosition = advanceToNextPatternElement(pattern, 0);
@@ -142,6 +155,7 @@ public class Main {
       case WORD_CLASS -> Character.isLetterOrDigit(character) || character == '_';
       case CHARACTER_GROUP -> matchesCharacterGroup(character, extractCharacterGroup(pattern, patternPosition));
       case ONE_OR_MORE -> matchOneOrMore(character, pattern, pattern, patternPosition);
+      case ZERO_OR_ONE -> false; // This case should not be handled here, it's handled in matchesPatternAtPosition
       case LITERAL_CHARACTER -> character == pattern.charAt(patternPosition);
     };
   }
@@ -204,7 +218,7 @@ public class Main {
     }
 
     return switch (type.get()) {
-      case DIGIT_CLASS, WORD_CLASS, ONE_OR_MORE -> currentPosition + 2; // Skip '\' and 'd'/'w'
+      case DIGIT_CLASS, WORD_CLASS, ONE_OR_MORE, ZERO_OR_ONE -> currentPosition + 2; // Skip '\' and 'd'/'w' or skip element and quantifier
       case CHARACTER_GROUP -> pattern.indexOf(']', currentPosition + 1) + 1; // Skip to after ']'
       case LITERAL_CHARACTER -> currentPosition + 1;
     };
@@ -272,6 +286,20 @@ public class Main {
         return true;
 
     } while (textPos < text.length() && text.charAt(textPos) == c);
+
+    return false;
+  }
+
+  private static boolean matchZeroOrOne(char element, String remainingPattern, String inputLine, int inputStart) {
+    // Try matching without consuming the element (zero occurrences)
+    if (matchesPatternAtPosition(inputLine, remainingPattern, inputStart)) {
+      return true;
+    }
+
+    // Try matching by consuming the element (one occurrence)
+    if (inputStart < inputLine.length() && inputLine.charAt(inputStart) == element) {
+      return matchesPatternAtPosition(inputLine, remainingPattern, inputStart + 1);
+    }
 
     return false;
   }
